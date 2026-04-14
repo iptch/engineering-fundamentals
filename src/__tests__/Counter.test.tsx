@@ -14,4 +14,5 @@ test("increments count when button is clicked", async () => {
 
   await user.click(button);
   expect(screen.getByRole("button", { name: /count is 2/i })).toBeInTheDocument();
+  console.log("Test");
 });
