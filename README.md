@@ -1,54 +1,6 @@
-# Build, Publish and Code Quality analysis in CI
-This readme helps you to create an CI environment which builds your project, publishes it to Azure Container Registry and executes Code Quality Analsis.
-
-### Prerequisites
-- Be part of ipt Sandbox subscription on Azure
-- Be part of ipt organisation in Github
-
-### Branches
-- **main**: Starting point to solve exercices
-- **solution**: Example solution (Musterlösung)
-
-# Setup
-1. Create a **public** fork of this Github repo **in your private github namespace** (this is required as we are using the FREE version of SonarCloud later on) \
-  a) Note: If the 'fork' button in the repo does not work (e.g. because the iptch repo is currently not public or forking is disabled on organization-level), you can do it manually:
-```
-# 1. Create an public repository in your personal github namespace
-# 2. Execute in your local terminal:
-git clone git@github.com:iptch/engineering-fundamentals.git
-cd engineering-fundamentals
-git remote remove origin
-git remote add origin https://github.com/<YourUsername>/<YourRepoName>.git
-git push --set-upstream origin main
-```
-2. Create Codespace (https://github.com/YourUsername/YourRepoName &rarr; Code &rarr; Codespaces) and install the azure cli \
-<img src="images/codespace.png" alt="Codespaces" width="300px">
-```
-# Inside Codespace
-pip install azure-cli
-```
-3. Verification
-Check your setup by running the react app in your codespace. You should be able to access the Webapp in your browser.
-```bash
-nvm install node
-npm install
-npm run dev
-```
-
 ## PART A - Unit Test
-### Create a unit test
-In the src directory there is the main App.tsx file. There we use the ``src/Counter.tsx`` component to implement a button 
-which increments its counter everytime it is clicked. Write a Unit Test for the ``src/Counter.tsx`` component in the 
-``src/__tests__`` folder using the jest.
-
-Now Execute your implemented unit test by running
-```bash
-npm test
-```
-
-### Automated test execution
-Adapt GitHub Actions workflow in the ``.gibhub/workflows`` directory such, that the unit tests are executed for every merge request and every push to the main branch.
-Check in the GitHub UI that, after each new commit on main, the GitHub Action is successfully executed.
+See *src/__tests__/Counter.test.tsx*. Execute it using `npm test`.
+The Github Action is defined in ``.github/workflows``
 
 ## PART B - Continuous Integration
 
@@ -66,7 +18,7 @@ az acr credential show --name <My-Azure-ACR>
 4. save (first) password as ACR_PASSWORD in github project settings &rarr; Secrets and variables &rarr; Actions &rarr; Repository secrets
 
 ### Publish your Webapp to ACR using gitlab pipelines
-Follow the **Tasks B.1 - B.3** in docker-publish.yml. Check that the Actions in your GitHub are executed properly.
+See ``docker-publish.yml``
 
 ### Run ACR image on your local machine (optional)
 If Docker is available on your local machine, you can try to run your ACR image locally
@@ -76,16 +28,17 @@ sudo docker login <My-Azure-ACR>.azurecr.io -u <My-Azure-ACR>
 sudo docker run -p 3000:3000 <My-Azure-ACR>.azurecr.io/ipt-spins:latest
 ```
 
+## PART B.2 - Security
+Use OIDC instead of Admin Credentials.
+
 ## PART C - Continuous Deployment
 
-Now we want to add a action to continuously release the newest version of the Application. Therefore, we create a new
-GitHub action. 
-First we need to deploy the application on azure. For this we define a new plan which uses the free azure plan F1
+1. Define a new plan which uses the free azure plan F1
 ```bash
 az appservice plan create --name <your-plan-name> --resource-group <your-resource-groupe-name> --sku F1 --is-linux
 ```
 
-Then we create a webapp using this plan. Make sure to specify your resource-group and set a name
+2. Create a webapp using this plan. Make sure to specify your resource-group and set a name
 ```bash
 az webapp create \
      --resource-group <your-resource-groupe-name>  \
@@ -93,16 +46,16 @@ az webapp create \
      --name <your-webapp-name> \
      --deployment-container-image-name lrengineering.azurecr.io/ipt-spins:latest
 ```
-Now we create new credentials which GitHub Action will use to deploy the application
+
+3. Create credentials which GitHub Action will use to deploy the application
 ```bash
 az ad sp create-for-rbac --name "<your-service-principal-name>" --role contributor \
     --scopes /subscriptions/<subscription-id>/resourceGroups/<resource-group> \
     --sdk-auth
 ```
 
-Store the returned json as secret in the ``<your-repository> ->Settings->Secrets And Variables->Actions secrets and variables``
-as new Secret with the name ``AZURE_RESOURCEGROUP_CONTRIBUTOR_SERVICEPRINICIPAL``. Create another Action secret or variable
-for the application name with under ``AZURE_WEBAPP_NAME`` containing ``<your-webapp-name> `` .
+Store the returned json as secret in Github: ``<your-repository> ->Settings->Secrets And Variables->Actions secrets and variables``. Use the name ``AZURE_RESOURCEGROUP_CONTRIBUTOR_SERVICEPRINICIPAL``. Create another Action secret or variable
+for the application name with ``AZURE_WEBAPP_NAME`` containing ``<your-webapp-name> `` .
 
 ## PART D - Code Quality
 
@@ -115,48 +68,22 @@ for the application name with under ``AZURE_WEBAPP_NAME`` containing ``<your-web
 5. Optional: Check the "Quality Gates" section in your SonarCloud organisation. Your can add and customize your own quality gates.
 
 ### Extend your GitHub Actions to use SonarCloud
-1. Follow the **Task D.1** in docker-publish.yml to enable SonarCloud analysis for each new Pull Request. \
+1. See docker-publish.yml on how to enable SonarCloud analysis for each new Pull Request. \
   a) Use the Project Key and Organization Key found in your SonarCloud project under 'Information'
-2. Observe your issues in SonarCloud  ((SonarCloud Project &rarr; Main Branch &rarr; Overall Code &rarr; Maintainability / Security Hotspots). **Fix them**.: \
+2. Observe your issues in SonarCloud  ((SonarCloud Project &rarr; Main Branch &rarr; Overall Code &rarr; Maintainability / Security Hotspots).: \
   a) Issue in **App.tsx** (in Maintainability) \
   b) Issue in **Dockerfile** (in Security Hotspots)
-
-## PART E - Security (Requires Part B)
-
-### Use OIDC instead of Admin credentials
-Instead of using the ACR Admin credentials, extend your setup to use OIDC.
 
 ## PART F - GitOps (Requires Part B)
 
 ### Use ArgoCD
-ArgoCD is a heavy used tool to enable gitops. It monitors your github repository and applies the configuration to the configured namespace.
-
-Deploy an AKS cluster and install ArgoCD on it. Then configure ArgoCD to monitor your github repository and apply the configuration to the configured namespace.
+(Build your own solution ;-) )
 
 
 ## PART G - Dependency Management
 
 ### Manage Dependencies
-Dependency management is a crucial part of software development. It helps you to keep your dependencies up to date and secure. 
-
-There are multiple tools and technologies to manage dependencies. Check which tool or technology fits best for your project and your needs. Take into account that this solution should be used in enterprise environments with multiple developers and multiple projects.
-
-Add a workflow to your project to automatically update dependencies.
-
-Be careful with permissions and tokens...
+Try using Dependabot
 
 ## PART H - AI Code Review
-
-Add the capability to your project to automatically review code changes using AI.
- 
-There are different possibilities to achieve this. For example there are different AI providers and different ways to integrate them into your project. List the advantages and disadvantages of the different approaches and choose the one that best suits your needs.
-
-PS: Keep the trivy incident in mind ;-) 
-
-
-# Debug / FAQ
-### "Build and Push Docker Image" fails with
-```
-Error response from daemon: Get "https://lrengineering.azurecr.io/v2/": dial tcp: lookup lrengineering.azurecr.io on 127.0.0.53:53: no such host
-```
-&rarr; Probably, your Azure Container Registry got deleten due to regular cleanup of ipt sandbox. Follow the steps in **PART B** to create a new one.
+(Build your own solution ;-) )
