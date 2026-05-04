@@ -86,4 +86,4 @@ for the application name with ``AZURE_WEBAPP_NAME`` containing ``<your-webapp-na
 Try using Dependabot
 
 ## PART H - AI Code Review
-(Build your own solution ;-) )
+There are multiple different ways to implement a AI code review. An example with a prePushHook is provided at /.githooks
