@@ -83,7 +83,7 @@ for the application name with ``AZURE_WEBAPP_NAME`` containing ``<your-webapp-na
 ## PART G - Dependency Management
 
 ### Manage Dependencies
-Try using Dependabot
+Try using solutions like Renovate or Dependabot
 
 ## PART H - AI Code Review
 There are multiple different ways to implement a AI code review. An example with a prePushHook is provided at /.githooks
